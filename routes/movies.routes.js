@@ -1,147 +1,159 @@
-const User = require("../models/User.model");
-
+const Movie = require("../models/Movie.model")
+const {isTokenValid} = require("../middlewares/auth.middlewares")   
 const router = require("express").Router();
-const bcrypt = require("bcryptjs")
-const jwt = require("jsonwebtoken")
-
-const { isTokenValid } = require("../middlewares/auth.middlewares")
-
-//rutas de identificacion
-
-//POST "/api/movies/signup" => recibe data (email, username, password) del usuario y lo crea en la DB
-router.post("/signup", async (req, res, next)=> {
-
-    console.log(req.body)
-
-    const {email, username, password,} = req.body
 
 
-    //validaciones de servidor
+//const { isTokenValid } = require("../middlewares/auth.middlewares")
 
-    //  1.todos los campos  obligatorios
-    if (!email || !username || !password) {
-        res.status(400).json({errormessage: "todos los campos obligatorios"})
-        return //deten la ejecucion de la ruta al probar postman y que no pete el servidor
-    }
+        //URL                   req.body
+//GET:  /movies/:genre                    -                           allmovies
+//GET:  /movies/:movieId             -                           returns movie details
+//POST: /movies             {img,title,characters               creates new movie object
+//                        genre,sinpsis, relatedMovies}
+//DELETE:/movies/:movieId           -                           deletes single movie card
+//PUT: /movies/:movieId   {img,title,characters               updates a whole movie card
+//                        genre,sinpsis, relatedMovies}
+//PATCH:"movies/:movieId/add-sinopsis/:sinopsis"                updates only sinopsis
+//get all movies OK
 
-    //  2.password seguro y fuerte
-    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/gm
-    if (passwordRegex.test(password) === false) {
-        res.status(400).json({errorMessage: "La contraseña no es suficientemente fuerte"})
-        return
-    }
-    //  3.no tener otro usuario que ya exista en la DB con mismo email  
-    try {
-        const foundUser = await User.findOne({email:email})
-        console.log(foundUser)
-        if (foundUser) {
-            res.status(400).json({errorMessage: "Usuario ya registrado con ese email"})
-            return // detén la ejecución de la ruta
-          }
+//All movies OK
 
-        const salt = await bcrypt.genSalt(12)
-        const hashPassword = await bcrypt.hash(password, salt)
+router.get("/", async (req, res, next) =>{
+        console.log("busca peli por genero")
+        console.log(req.params)
+        try {
+                
+                const movies = await Movie.find().populate({path:"owner", select: "username"})//busco todas las pelis
+                console.log(movies)
+                res.json(movies)
+                               
+        } catch (error) {
+                console.log(error)
+                next(error)
+        }
+})
 
-        //  creamos usuario en la DB 
-        await User.create({
-            email: email,
-            username: username,
-            password: hashPassword
-             //imagen no requerida pero debo añadirla
 
+
+//get movies by genre OK
+router.get("/:genre/genre", async (req, res, next) =>{
+        console.log("busca peli por genero")
+        console.log(req.params)
+        
+
+        try {
+                //await MovieCard.find({movieId:req.params.movieId})
+                const movies = await Movie.find({genre: req.params.genre})
+                /*if(movies.length > 0) {
+                        res.status(200).json({message: "movie founded by genre", data: movies})
+                } else {
+                        res.status(404).json({message: "movie not founded by genre"})
+                }*/
+                res.json(movies)
+                               
+        } catch (error) {
+                console.log(error)
+                next(error)
+        }
+})
+
+
+
+//   Get movie id OK
+router.get("/:movieId", async (req, res, next) =>{
+        console.log("buscando peli")
+        console.log(req.params)
+        try {   
+
+                const response = await Movie.findById(req.params.movieId)
+                res.json(response)
+                //res.status(200).json({message: "movie founded"})               
+        } catch (error) {
+                console.log(error)
+                next(error)
+        }
+})
+
+
+// Create new movie OK
+router.post("/", isTokenValid, async (req,res,next) => {
+        console.log(req.body)
+        
+        Movie.create({
+                //cunado termine usamos cloudinaryimg: String,
+                title: req.body.title,
+                characters: req.body.characters,
+                genre: req.body.genre,
+                sinopsis: req.body.sinopsis,
+                relatedMovies: req.body.relatedMovies,
+                owner: req.payload._id
         })
-        
-        
-        res.sendStatus(201)
-        
-        
-    }catch(error) {
-        next(error)
-    }
-
+        .then(() => {
+        res.status(201).json({message: "movie created"})
+        })
+        .catch((error) => {
+                console.log(error)
+                next(error)
+        })
 })
 
-//POST "/api/movies/login" => recibe credenciales del usuario (email, password) y las valida. crearemos y enviaremos token
-
-router.post("/login", async (req, res, next) => {
-
-
-    console.log(req.body)
-    const { email, password} = req.body
-
-    // 1.campos existan
-
-    if (!email || !password) {
-        res.status(400).json({errormessage: "todos los campos obligatorios"})
-        return //deten la ejecucion de la ruta al probar postman y que no pete el servidor
-    }
-
-    try {
-
-        // 2.usuario exista
-        const foundUser = await User.findOne( {email: email})
-        console.log(foundUser)
-        if (!foundUser) {
-            res.status(400).json({errorMessage: "Usuario no registrado"})
-            return // detén la ejecución de la ruta
-          }
-        
-        //3. contraseña corerecta
-
-        const isPasswordcorrect = await bcrypt.compare(password, foundUser.password)
-        console.log(isPasswordcorrect)
-        if (isPasswordcorrect === false) {
-            res.status(400).json({errorMessage: "contraseña chunga"})
-            return
+// delete movie OK
+router.delete("/:movieId", async (req, res, next) => {
+        try {
+            
+            await Movie.findByIdAndDelete(req.params.movieId)
+            res.json("movie deleted")
+            //res.sendStatus(202).json({message: "movie deleted"})
+        } catch (error) {
+            
+            next(error)
         }
+    })
 
-        //usuario autenticado. creamos y enviamos token
-        const payload = {
-            _id: foundUser._id,
-            email: foundUser.email
-            //culaquier info statica del usuario deberia ir aqui
+// editar movie OK
+router.put("/:movieId", async (req, res, next) => {
+        try {
+                await Movie.findByIdAndUpdate(req.params.movieId, {
+                        title: req.body.title,
+                        characters: req.body.characters,
+                        genre: req.body.genre,
+                        sinopsis: req.body.sinopsis,
+                        relatedMovies: req.body.relatedMovies,   
+
+                })
+                res.json("edited")
+                //res.sendStatus(202).json({message: "movie deleted"})
+            } catch (error) {
+                console.log(error)
+                next(error)
+            }
+        })
+
+// editar parcial PACTH / me puede servir para cambiar la imagen
+router.patch("/:movieId/add-sinopsis/:sinopsis", async (req, res, next) => {
+
+        try {
+                await Movie.findByIdAndUpdate(req.params.movieId, {
+                        sinopsis : req.params.sinopsis
+                })
+
+                res.json("sinopsis editada")
+
+        } catch (error) {
+                console.log(error)
+                next(error)
         }
-
-        const authToken = jwt.sign(
-            payload, //contenido token
-            process.env.TOKEN_SECRET, //clave servidor tokens desde .env
-            { algorithm: "HS256", expiresIn: "100 days"}//config token
-
-        )
-
-        res.status(200).json({ authToken: authToken})
-
-
-
-        
-
-    } catch(error) {
-        next(error)
-    }
-    
-    
-   
-
-})
-
-//GET "/api/movies/verify" => recibe token y lo valida
-router.get("/verify", isTokenValid, (req, res, next) => {
-
-    console.log(req.payload)
-    //este es el usuario haciendo esta llamda
-    //esto ayuda a saber cuando crean doc, delete doc o quien lo edita
-
-
-    res.status(200).json({payload: req.payload})
-})
-
-//ruta que solo envia info a usuarios logeados(privado)
-router.get("/private-route-mainmovies", isTokenValid, (req, res) => {
-
-    res.json({data: "info solo para logeadis"})
-
 })
 
 
 
-module.exports = router;
+
+
+      
+
+
+
+
+
+
+module.exports = router
