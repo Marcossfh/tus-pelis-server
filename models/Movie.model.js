@@ -4,11 +4,14 @@ const { Schema, model } = require("mongoose");
 const movieSchema = new Schema(
   {
 
-img : String,
+img: {
+  type: String,
+  required: false,
+},
 title: {
   type: String,
   required: true,
-  
+
 },
 characters: {
   type: String,

@@ -19,7 +19,7 @@ const router = require("express").Router();
 //All movies OK
 
 router.get("/", async (req, res, next) =>{
-        console.log("busca peli por genero")
+        console.log("busca pelis")
         console.log(req.params)
         try {
                 
@@ -81,6 +81,7 @@ router.post("/", isTokenValid, async (req,res,next) => {
         
         Movie.create({
                 //cunado termine usamos cloudinaryimg: String,
+                img: req.body.img,
                 title: req.body.title,
                 characters: req.body.characters,
                 genre: req.body.genre,

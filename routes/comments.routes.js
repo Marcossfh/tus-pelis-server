@@ -15,6 +15,21 @@ const jwt = require("jsonwebtoken")
 router.get("/", async (req, res, next) => {
     try {
         const comment = await Comment.find().populate({path:"user", select: "username"})
+        console.log("pasa")
+        res.status(200).json(comment)
+    } catch (error) {
+        next(error)
+        
+    }
+})
+
+//get movie comment
+router.get("/:movieId", async (req, res, next) => {
+    try {
+        const movieId = req.params.movieId;
+        console.log(movieId)
+        const comment = await Comment.find({ movie: movieId })
+    
         res.status(200).json(comment)
     } catch (error) {
         next(error)
@@ -28,11 +43,12 @@ router.post("/", isTokenValid, async (req, res, next) => {
     console.log(req.body)
 
     Comment.create({
-        text: req.body.text,
+        text: req.body.newComment,
         user: req.payload._id,//userId
         movie: req.body.movie //movieId que viene del FE
     })
     .then(() => {
+        console.log(req.payload._id)
     res.status(201).json({message: "comment created"})
     })
     .catch((error) => {
