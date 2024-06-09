@@ -28,7 +28,11 @@ router.use("/user", userRouter)
 const uploadRoutes = require("./upload.routes");
 router.use("/upload", uploadRoutes);
 
-// ...
+
+
+const favoritoRouter = require("./favorito.routes")
+router.use("/favorito", favoritoRouter)
+
 
 module.exports = router;
 

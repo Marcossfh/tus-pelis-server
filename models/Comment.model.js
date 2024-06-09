@@ -3,26 +3,26 @@ const { Schema, model } = require("mongoose");
 // TODO: Please make sure you edit the User model to whatever makes sense in this case
 const commentSchema = new Schema(
   {
-
-    text:{
+    text: {
       type: String,
-    } ,
+    },
     user: {
       type: Schema.Types.ObjectId,
-      ref: "User"
-    }, 
-    movie:{
+      ref: "User",
+    },
+    username: {
+      type: String,
+    },
+    movie: {
       type: Schema.Types.ObjectId,
-      ref: "Movie"
-    }
-    
-},
-  
+      ref: "Movie",
+    },
+  },
+
   {
-    // this second object adds extra properties: `createdAt` and `updatedAt`    
-    timestamps: true
+    timestamps: true,
   }
-); 
+);
 
 const Comment = model("Comment", commentSchema);
 
